@@ -18,7 +18,7 @@ import { brands, categories, colors, sizes } from "@/utils/config";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, Suspense, useEffect, useState } from "react";
 
 interface FormState {
   name: string;
@@ -30,7 +30,7 @@ interface FormState {
   stock: string;
 }
 
-function SuperAdminManageProductPage() {
+function SuperAdminManageProductPageComponent() {
   const [formState, setFormState] = useState({
     name: "",
     brand: "",
@@ -161,7 +161,8 @@ function SuperAdminManageProductPage() {
   };
 
   return (
-    <div className="p-6">
+  
+<div className="p-6">
       <div className="flex flex-col gap-6">
         <header className="flex items-center justify-between">
           <h1>Add Product</h1>
@@ -345,7 +346,18 @@ function SuperAdminManageProductPage() {
         </form>
       </div>
     </div>
+    
   );
 }
+
+
+function SuperAdminManageProductPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuperAdminManageProductPageComponent />
+    </Suspense>
+  )
+};
+
 
 export default SuperAdminManageProductPage;
