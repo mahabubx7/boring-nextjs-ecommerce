@@ -23,25 +23,24 @@ async function setTokens(
   accessToken: string,
   refreshToken: string
 ) {
-  let domain: string;
+  let domain: string = "localhost";
+
   if (process.env.NODE_ENV === "production") {
     domain = process.env.COOKIE_DOMAIN!;
-  } else {
-    domain = "localhost";
   }
 
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: domain,
+    domain,
     maxAge: 60 * 60 * 1000,
   });
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: domain,
+    domain,
     maxAge: 7 * 24 * 60 * 60,
   });
 }
