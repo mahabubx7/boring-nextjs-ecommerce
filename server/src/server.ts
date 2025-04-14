@@ -38,7 +38,14 @@ app.use("/api/address", addressRoutes);
 app.use("/api/order", orderRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Hello from E-Commerce backend");
+  // res.send("Hello from E-Commerce backend");
+  res.json({
+    message: "Hello from E-Commerce backend",
+    success: true,
+    NODE_ENV: process.env.NODE_ENV,
+    cookieDomain: process.env.COOKIE_DOMAIN,
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(","),
+  })
 });
 
 app.listen(PORT, () => {
