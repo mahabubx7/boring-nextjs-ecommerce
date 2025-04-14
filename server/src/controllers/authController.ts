@@ -105,10 +105,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     );
 
     //set out tokens
-    await setTokens(res, accessToken, refreshToken);
+    // await setTokens(res, accessToken, refreshToken);
     res.status(200).json({
       success: true,
       message: "Login successfully",
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
       user: {
         id: extractCurrentUser.id,
         name: extractCurrentUser.name,

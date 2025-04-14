@@ -14,6 +14,10 @@ type AuthStore = {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  } | null;
   register: (
     name: string,
     email: string,
@@ -22,6 +26,10 @@ type AuthStore = {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<Boolean>;
+  getTokens: () => Promise<{
+    accessToken: string;
+    refreshToken: string;
+  } | null>;
 };
 
 const axiosInstance = axios.create({
@@ -33,6 +41,7 @@ export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
+      tokens: null,
       isLoading: false,
       error: null,
       register: async (name, email, password) => {
@@ -65,7 +74,23 @@ export const useAuthStore = create<AuthStore>()(
             password,
           });
 
-          set({ isLoading: false, user: response.data.user });
+          set({ isLoading: false, user: response.data.user, tokens: {
+            accessToken: response.data.tokens.accessToken,
+            refreshToken: response.data.tokens.refreshToken,
+          } });
+
+          // Set the cookies in the browser
+          await fetch("/api/cookie", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              accessToken: response.data.tokens.accessToken,
+              refreshToken: response.data.tokens.refreshToken,
+            }),
+          });
           return true;
         } catch (error) {
           set({
@@ -82,7 +107,7 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           await axiosInstance.post("/logout");
-          set({ user: null, isLoading: false });
+          set({ user: null, isLoading: false, tokens: null });
         } catch (error) {
           set({
             isLoading: false,
@@ -99,6 +124,15 @@ export const useAuthStore = create<AuthStore>()(
         } catch (e) {
           console.error(e);
           return false;
+        }
+      },
+      getTokens: async () => {
+        try {
+          const response = get().tokens;
+          return response;
+        } catch (e) {
+          console.error(e);
+          return null;
         }
       },
     }),
