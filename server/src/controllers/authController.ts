@@ -34,6 +34,7 @@ async function setTokens(
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
+
     domain: domain,
     maxAge: 60 * 60 * 1000,
   });
