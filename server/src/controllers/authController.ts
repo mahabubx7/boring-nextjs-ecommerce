@@ -23,10 +23,18 @@ async function setTokens(
   accessToken: string,
   refreshToken: string
 ) {
+  let domain: string;
+  if (process.env.NODE_ENV === "production") {
+    domain = "all-in-one-sports-merchandise.vercel.app";
+  } else {
+    domain = "localhost";
+  }
+
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
+    domain: "all-in-one-sports-merchandise.vercel.app",
     maxAge: 60 * 60 * 1000,
   });
   res.cookie("refreshToken", refreshToken, {
