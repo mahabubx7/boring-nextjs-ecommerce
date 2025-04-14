@@ -25,7 +25,7 @@ async function setTokens(
 ) {
   let domain: string;
   if (process.env.NODE_ENV === "production") {
-    domain = "all-in-one-sports-merchandise.vercel.app";
+    domain = process.env.COOKIE_DOMAIN!;
   } else {
     domain = "localhost";
   }
@@ -33,15 +33,14 @@ async function setTokens(
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-
+    sameSite: "lax",
     domain: domain,
     maxAge: 60 * 60 * 1000,
   });
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: "lax",
     domain: domain,
     maxAge: 7 * 24 * 60 * 60,
   });
