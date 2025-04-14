@@ -8,7 +8,7 @@ const userRoutes = ["/home"];
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export async function middleware(request: NextRequest) {
-  const accessToken = request.cookies.get("accessToken")?.value;
+  const accessToken = request.cookies.get("auth_token")?.value;
   const { pathname } = request.nextUrl;
 
   if (accessToken) {
@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
       if (refreshResponse.ok) {
         const response = NextResponse.next();
         response.cookies.set(
-          "accessToken",
+          "auth_token",
           refreshResponse.headers.get("Set-Cookie") || ""
         );
         return response;
@@ -66,8 +66,7 @@ export async function middleware(request: NextRequest) {
         const response = NextResponse.redirect(
           new URL("/auth/login", request.url)
         );
-        response.cookies.delete("accessToken");
-        response.cookies.delete("refreshToken");
+        response.cookies.delete("auth_token");
         return response;
       }
     }

@@ -14,12 +14,15 @@ export const authenticateJwt = (
   res: Response,
   next: NextFunction
 ) => {
-  const accessToken = req.cookies.accessToken;
+  let accessToken = req.cookies.accessToken;
   if (!accessToken) {
+    accessToken = req.headers["authorization"]?.split(" ")[1];
+    if (!accessToken) {
     res
       .status(401)
       .json({ success: false, error: "Access token is not present" });
     return;
+    }
   }
 
   jwtVerify(accessToken, new TextEncoder().encode(process.env.JWT_SECRET))
