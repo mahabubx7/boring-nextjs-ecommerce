@@ -34,13 +34,15 @@ async function setTokens(
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
-    domain: "all-in-one-sports-merchandise.vercel.app",
+
+    domain: domain,
     maxAge: 60 * 60 * 1000,
   });
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
+    domain: domain,
     maxAge: 7 * 24 * 60 * 60,
   });
 }
