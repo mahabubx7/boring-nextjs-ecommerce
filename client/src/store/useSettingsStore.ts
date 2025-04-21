@@ -1,3 +1,6 @@
+'use client';
+
+import { getAxiosInstance } from "@/lib/axios";
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
@@ -33,9 +36,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   fetchBanners: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${API_ROUTES.SETTINGS}/get-banners`, {
-        withCredentials: true,
-      });
+      const ax = getAxiosInstance(API_ROUTES.SETTINGS);
+      const response = await ax.get(`/get-banners`);
       set({ banners: response.data.banners, isLoading: false });
     } catch (e) {
       console.error(e);
@@ -45,8 +47,9 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   fetchFeaturedProducts: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(
-        `${API_ROUTES.SETTINGS}/fetch-feature-products`,
+      const ax = getAxiosInstance(API_ROUTES.SETTINGS);
+      const response = await ax.get(
+        `/fetch-feature-products`,
         {
           withCredentials: true,
         }
@@ -65,11 +68,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append("images", file));
-      const response = await axios.post(
-        `${API_ROUTES.SETTINGS}/banners`,
+      const ax = getAxiosInstance(API_ROUTES.SETTINGS);
+      const response = await ax.post(
+        `/banners`,
         formData,
         {
-          withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -88,12 +91,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   updateFeaturedProducts: async (productIds: string[]) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(
-        `${API_ROUTES.SETTINGS}/update-feature-products`,
+      const ax = getAxiosInstance(API_ROUTES.SETTINGS);
+      const response = await ax.post(
+        `/update-feature-products`,
         { productIds },
-        {
-          withCredentials: true,
-        }
       );
       set({
         isLoading: false,

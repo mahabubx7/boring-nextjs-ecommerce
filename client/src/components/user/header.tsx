@@ -1,27 +1,27 @@
 "use client";
 
+import { useAuthStore } from "@/store/useAuthStore";
+import { useCartStore } from "@/store/useCartStore";
 import { ArrowLeft, Menu, ShoppingBag, ShoppingCart, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
-import { useAuthStore } from "@/store/useAuthStore";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../ui/sheet";
-import { useEffect, useState } from "react";
-import { useCartStore } from "@/store/useCartStore";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 
-const navItems = [
+type NavItem = {
+  title: string;
+  to: string;
+};
+
+const navItems: NavItem[] = [
   {
     title: "HOME",
     to: "/",
@@ -30,10 +30,14 @@ const navItems = [
     title: "PRODUCTS",
     to: "/listing",
   },
+  {
+    title: "GAME ZONE",
+    to: "/game",
+  },
 ];
 
 function Header() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const router = useRouter();
   const [mobileView, setMobileView] = useState<"menu" | "account">("menu");
   const [showSheetDialog, setShowSheetDialog] = useState(false);
@@ -118,7 +122,7 @@ function Header() {
                 className="w-full justify-start"
               >
                 <ShoppingBag className="mr-1 h-4 w-4" />
-                Cart (2)
+                Cart ({items?.length || 0})
               </Button>
             </div>
           </div>
@@ -147,6 +151,17 @@ function Header() {
             </nav>
           </div>
           <div className="hidden lg:flex items-center space-x-4">
+            <span className="inline-flex justify-center items-center p-1.5">
+              <span>
+                <Image
+                  src="/coin.png"
+                  alt="game-coin-icon"
+                  width={16}
+                  height={16}
+                />
+              </span>
+              <span className="ml-1 inline-block">{user?.gameCoin}</span>
+            </span>
             <div
               className="relative cursor-pointer"
               onClick={() => router.push("/cart")}
@@ -158,9 +173,11 @@ function Header() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" variant={"ghost"}>
-                  <User className="h-5 w-5" />
-                </Button>
+                <div>
+                  <Button size="icon" variant={"ghost"}>
+                    <User className="h-5 w-5" />
+                  </Button>
+                </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => router.push("/account")}>

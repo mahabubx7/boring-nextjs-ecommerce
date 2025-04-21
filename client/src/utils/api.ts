@@ -8,4 +8,5 @@ export const API_ROUTES = {
   CART: `${API_BASE_URL}/api/cart`,
   ADDRESS: `${API_BASE_URL}/api/address`,
   ORDER: `${API_BASE_URL}/api/order`,
+  GAME: `${API_BASE_URL}/api/game`
 };

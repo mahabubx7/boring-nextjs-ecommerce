@@ -1,7 +1,8 @@
 import axios from "axios";
-import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { NextFunction, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
+import { getCurrentWeekCode } from "../lib/week";
+import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { prisma } from "../server";
 
 const PAYPAL_CLIENT_ID =
@@ -127,8 +128,9 @@ export const createFinalOrder = async (
   try {
     const { items, addressId, couponId, total, paymentId } = req.body;
     const userId = req.user?.userId;
+    const season = req.query.season as string | undefined;
 
-    console.log(items, "itemsitemsitems");
+    // console.log(items, "itemsitemsitems");
 
     if (!userId) {
       res.status(401).json({
@@ -139,6 +141,54 @@ export const createFinalOrder = async (
       return;
     }
 
+    // check coupon validity
+    if (couponId) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { id: couponId },
+      });
+
+      if (!coupon) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid coupon",
+        });
+
+        return;
+      }
+
+      // handle top-hacker coupons
+      if (coupon.usageLimit === -1) {
+        // T0P-HACKER COUPONs for gaming rewards
+        // ignore this while validating
+        // check seasonal usages
+        const countUsages = await prisma.couponUser.findFirst({
+          where: {
+            couponId: couponId,
+            userId: userId,
+            seasonId: (season ?? getCurrentWeekCode()) as string,
+          },
+        });
+
+        if (countUsages && countUsages.usedCount >= 1) {
+          res.status(400).json({
+            success: false,
+            message: "Coupon usage limit exceeded",
+          });
+
+          return;
+        }
+      }
+
+      if (coupon.usageCount >= coupon.usageLimit) {
+        res.status(400).json({
+          success: false,
+          message: "Coupon usage limit exceeded",
+        });
+
+        return;
+      }
+    }
+
     //start our transaction
 
     const order = await prisma.$transaction(async (prisma) => {
@@ -147,11 +197,11 @@ export const createFinalOrder = async (
         data: {
           userId,
           addressId,
-          couponId,
+          couponId: couponId,
           total,
           paymentMethod: "CREDIT_CARD",
           paymentStatus: "COMPLETED",
-          paymentId,
+          paymentTrxId: paymentId,
           items: {
             create: items.map((item: any) => ({
               productId: item.productId,

@@ -1,21 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { NextRequest, NextResponse } from "next/server";
 
-const publicRoutes = ["/auth/register", "/auth/login"];
+const publicRoutes = ["/auth/register", "/auth/login", "/auth/oauth"];
 const superAdminRoutes = ["/super-admin", "/super-admim/:path*"];
-const userRoutes = ["/home"];
+const userRoutes = ["/home", "/game", "/game/:path*"];
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("auth_token")?.value;
   const { pathname } = request.nextUrl;
 
-  if (accessToken) {
+  if (accessToken && accessToken.length > 0) {
+    console.log("Access token found:", accessToken);
     try {
       const { payload } = await jwtVerify(
         accessToken,
-        new TextEncoder().encode(process.env.JWT_SECRET)
+        new TextEncoder().encode(process.env.JWT_SECRET!)
       );
       const { role } = payload as {
         role: string;
@@ -46,29 +48,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     } catch (e) {
       console.error("Token verification failed", e);
-      const refreshResponse = await fetch(
-        API_BASE_URL + "/api/auth/refresh-token",
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-
-      if (refreshResponse.ok) {
-        const response = NextResponse.next();
-        response.cookies.set(
-          "auth_token",
-          refreshResponse.headers.get("Set-Cookie") || ""
-        );
-        return response;
-      } else {
-        //ur refresh is also failed
-        const response = NextResponse.redirect(
-          new URL("/auth/login", request.url)
-        );
-        response.cookies.delete("auth_token");
-        return response;
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_storage");
+        request.cookies.delete("auth_token");
+        request.cookies.delete("auth_rf_token");
       }
+
+      return NextResponse.redirect(new URL("/auth/login", request.url));
     }
   }
 

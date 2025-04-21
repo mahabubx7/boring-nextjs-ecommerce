@@ -1,15 +1,18 @@
 import { PrismaClient } from "@prisma/client";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import authRoutes from "./routes/authRoutes";
-import productRoutes from "./routes/productRoutes";
-import couponRoutes from "./routes/couponRoutes";
-import settingsRoutes from "./routes/settingRoutes";
-import cartRoutes from "./routes/cartRoutes";
+import "express-async-errors";
 import addressRoutes from "./routes/addressRoutes";
+import authRoutes from "./routes/authRoutes";
+import cartRoutes from "./routes/cartRoutes";
+import couponRoutes from "./routes/couponRoutes";
+import gameRoutes from "./routes/gamesRoutes";
 import orderRoutes from "./routes/orderRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
+import productRoutes from "./routes/productRoutes";
+import settingsRoutes from "./routes/settingRoutes";
 
 //load all your enviroment variables
 dotenv.config();
@@ -20,7 +23,7 @@ const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS?.split(","),
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-refresh-token"],
 };
 
 app.use(cors(corsOptions));
@@ -36,17 +39,35 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/address", addressRoutes);
 app.use("/api/order", orderRoutes);
+app.use("/api/game", gameRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.get("/", (req, res) => {
   // res.send("Hello from E-Commerce backend");
   res.json({
-    message: "Hello from E-Commerce backend",
     success: true,
+    message: "Hello from E-Commerce backend",
     NODE_ENV: process.env.NODE_ENV,
-    cookieDomain: process.env.COOKIE_DOMAIN,
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(","),
-  })
+  });
 });
+
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("Error:", err);
+
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || "Internal Server Error",
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server is now running on port ${PORT}`);

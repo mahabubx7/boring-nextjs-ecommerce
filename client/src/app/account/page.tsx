@@ -17,7 +17,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Address, useAddressStore } from "@/store/useAddressStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderStore } from "@/store/useOrderStore";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const initialAddressFormState = {
@@ -45,6 +47,7 @@ function UserAccountPage() {
   const [formData, setFormData] = useState(initialAddressFormState);
   const { toast } = useToast();
   const { userOrders, getOrdersByUserId, isLoading } = useOrderStore();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchAddresses();
@@ -137,7 +140,14 @@ function UserAccountPage() {
     }
   };
 
-  if (isLoading) return null;
+  if (isLoading)
+    return (
+      <>
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+        </div>
+      </>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -145,6 +155,36 @@ function UserAccountPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold">MY ACCOUNT</h1>
         </div>
+
+        <div className="mx-auto max-w-md w-full p-6 shadow-foreground/15 shadow-sm mb-8 rounded-md bg-background text-foreground flex flex-col gap-1.5">
+          <h2 className="text-2xl font-semibold text-center mb-4">
+            Profile Information
+          </h2>
+          <div className="flex flex-col md:flex-row md:justify-start items-center md:items-stretch gap-2 md:gap-x-4">
+            <Image
+              src={user?.avaterUrl!}
+              fetchPriority="high"
+              width={128}
+              height={128}
+              className="rounded-full mb-4"
+              alt="user-photo"
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm">{user?.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {user?.email ? user.email : ""}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Role: <code>{user?.role ? user.role : ""}</code>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Total Coins: {user?.gameCoin}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Tabs defaultValue="orders" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="orders">Order History</TabsTrigger>

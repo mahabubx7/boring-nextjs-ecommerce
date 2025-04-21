@@ -16,15 +16,21 @@ datasource db {
 model User {
   id           String    @id @default(cuid())
   name         String?
+  avaterUrl    String    @default("https://avatar.iran.liara.run/username?username=User")
   email        String    @unique
   password     String
+  authProvider AuthProvider @default(CREDENTIALS)
   role         Role      @default(USER)
+  gameCoin     Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   refreshToken String?   @unique
   cart         Cart?
   addresses    Address[]
   orders       Order[]
+  gameSeasons  GameSeason[]
+  gameAchievements GameAchievement[]
+  usedCoupons CouponUser[]
 }
 
 model product {
@@ -87,6 +93,21 @@ model Coupon {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   orders          Order[]
+  couponUsers     CouponUser[]
+}
+
+model CouponUser {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  seasonId  String   @default(cuid())
+  usedCount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, seasonId])
 }
 
 model Address {
@@ -120,7 +141,7 @@ model Order {
   status        OrderStatus   @default(PENDING)
   paymentMethod PaymentMethod
   paymentStatus PaymentStatus @default(PENDING)
-  paymentId     String?
+  paymentTrxId  String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -147,6 +168,43 @@ model OrderItem {
   @@index([productId])
 }
 
+model GameSeason {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  game      GameType @default(GUESS_THE_NUMBER)
+  score     Int
+  week      String  // e.g., "2025-APR-W3"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, week])
+  @@index([week])
+  @@index([userId])
+}
+
+model GameAchievement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  game      GameType @default(GUESS_THE_NUMBER)
+  score     Int
+  week      String   // e.g., "2025-APR-W3"
+  rank      Int 
+  bonus     Float  @default(10.0)// 10 percentage of game coin earned
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, week, rank])
+  @@index([week])
+  @@index([userId])
+}
+
+enum GameType {
+  GUESS_THE_NUMBER
+  ROLL_THE_DICE
+}
+
 enum Role {
   USER
   SUPER_ADMIN
@@ -160,10 +218,16 @@ enum OrderStatus {
 }
 
 enum PaymentMethod {
-  CREDIT_CARD
+  COD 
+  ONLINE
 }
 
 enum PaymentStatus {
   PENDING
   COMPLETED
+}
+
+enum AuthProvider {
+  CREDENTIALS
+  GOOGLE
 }

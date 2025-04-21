@@ -1,3 +1,6 @@
+"use client";
+
+import { getAxiosInstance } from "@/lib/axios";
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
@@ -6,8 +9,12 @@ import { persist } from "zustand/middleware";
 type User = {
   id: string;
   name: string | null;
+  avaterUrl: string | null;
   email: string;
   role: "USER" | "SUPER_ADMIN";
+  gameCoin: number;
+  gameSeason: Record<string, any>[];
+  gameAchievements: Record<string, any>[];
 };
 
 type AuthStore = {
@@ -25,17 +32,15 @@ type AuthStore = {
   ) => Promise<string | null>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  getUser: () => Promise<User | null>;
   refreshAccessToken: () => Promise<Boolean>;
   getTokens: () => Promise<{
     accessToken: string;
     refreshToken: string;
   } | null>;
+  setTokens: (tokens: { access: string; refresh: string }) => Promise<void>;
+  authorizeOAuthUser: (ouid: string) => Promise<void>;
 };
-
-const axiosInstance = axios.create({
-  baseURL: API_ROUTES.AUTH,
-  withCredentials: true,
-});
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -47,7 +52,8 @@ export const useAuthStore = create<AuthStore>()(
       register: async (name, email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axiosInstance.post("/register", {
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          const response = await ax.post("/register", {
             name,
             email,
             password,
@@ -69,15 +75,23 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await axiosInstance.post("/login", {
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          const response = await ax.post("/login", {
             email,
             password,
           });
 
-          set({ isLoading: false, user: response.data.user, tokens: {
-            accessToken: response.data.tokens.accessToken,
-            refreshToken: response.data.tokens.refreshToken,
-          } });
+          set({
+            isLoading: false,
+            user: {
+              ...response.data.user,
+              profile: response.data.user.avaterUrl,
+            },
+            tokens: {
+              accessToken: response.data.tokens.accessToken,
+              refreshToken: response.data.tokens.refreshToken,
+            },
+          });
 
           // Set the cookies in the browser
           await fetch("/api/cookie", {
@@ -103,11 +117,44 @@ export const useAuthStore = create<AuthStore>()(
           return false;
         }
       },
+      getUser: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          const response = await ax.post("/me");
+          set({
+            user: response.data.user,
+            isLoading: false,
+          });
+          return response.data.user;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Failed to fetch user"
+              : "Failed to fetch user",
+          });
+          return null;
+        }
+      },
       logout: async () => {
         set({ isLoading: true, error: null });
         try {
-          await axiosInstance.post("/logout");
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          await ax.post("/logout");
           set({ user: null, isLoading: false, tokens: null });
+          await fetch("/api/cookie/logout", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("auth-storage");
+            window.location.href = "/";
+          }
         } catch (error) {
           set({
             isLoading: false,
@@ -119,7 +166,8 @@ export const useAuthStore = create<AuthStore>()(
       },
       refreshAccessToken: async () => {
         try {
-          await axiosInstance.post("/refresh-token");
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          await ax.post("/refresh-token");
           return true;
         } catch (e) {
           console.error(e);
@@ -133,6 +181,65 @@ export const useAuthStore = create<AuthStore>()(
         } catch (e) {
           console.error(e);
           return null;
+        }
+      },
+      setTokens: async (tokens) => {
+        set({ isLoading: true, error: null });
+        set({
+          tokens: { accessToken: tokens.access, refreshToken: tokens.refresh },
+        });
+        set({ isLoading: false });
+      },
+      authorizeOAuthUser: async (ouid) => {
+        set({ isLoading: true, error: null });
+        try {
+          const ax = getAxiosInstance(API_ROUTES.AUTH);
+          const response = await ax.post(
+            "/oauth/authorize",
+            {},
+            {
+              params: {
+                ouid,
+              },
+            }
+          );
+
+          console.log("### GOT => ", response.data);
+
+          set({
+            user: {
+              id: response.data.user.id,
+              name: response.data.user.name,
+              avaterUrl: response.data.user.avaterUrl,
+              email: response.data.user.email,
+              role: response.data.user.role,
+              gameCoin: response.data.user.gameCoin || 0,
+              gameSeason: response.data.user.gameSeason || [],
+              gameAchievements: response.data.user.gameAchievements || [],
+            },
+            isLoading: false,
+            tokens: response.data.tokens,
+          });
+
+          // Set the cookies in the browser
+          await fetch("/api/cookie", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              accessToken: response.data.tokens.accessToken,
+              refreshToken: response.data.tokens.refreshToken,
+            }),
+          });
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: axios.isAxiosError(error)
+              ? error?.response?.data?.error || "Failed to fetch user"
+              : "Failed to fetch user",
+          });
         }
       },
     }),

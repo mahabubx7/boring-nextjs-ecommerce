@@ -1,5 +1,7 @@
+"use client";
+
+import { getAxiosInstance } from "@/lib/axios";
 import { API_ROUTES } from "@/utils/api";
-import axios from "axios";
 import { create } from "zustand";
 
 export interface Coupon {
@@ -10,6 +12,16 @@ export interface Coupon {
   endDate: string;
   usageLimit: number;
   usageCount: number;
+  prizeCoupons:
+    | {
+        success: true;
+        message: string;
+        coupon: {
+          code: string;
+          discountPercent: number;
+        };
+      }
+    | { success: false; message: string };
 }
 
 interface CouponStore {
@@ -18,7 +30,7 @@ interface CouponStore {
   error: string | null;
   fetchCoupons: () => Promise<void>;
   createCoupon: (
-    coupon: Omit<Coupon, "id" | "usageCount">
+    coupon: Omit<Coupon, "id" | "usageCount" | "prizeCoupons">
   ) => Promise<Coupon | null>;
   deleteCoupon: (id: string) => Promise<boolean>;
 }
@@ -30,10 +42,9 @@ export const useCouponStore = create<CouponStore>((set, get) => ({
   fetchCoupons: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(
-        `${API_ROUTES.COUPON}/fetch-all-coupons`,
-        { withCredentials: true }
-      );
+      const ax = getAxiosInstance(API_ROUTES.COUPON);
+      const response = await ax.get(`/fetch-all-coupons`);
+      console.log("all-cps: ", response.data);
       set({ couponList: response.data.couponList, isLoading: false });
     } catch (e) {
       set({ isLoading: false, error: "Failed to fetch coupons" });
@@ -42,11 +53,8 @@ export const useCouponStore = create<CouponStore>((set, get) => ({
   createCoupon: async (coupon) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(
-        `${API_ROUTES.COUPON}/create-coupon`,
-        coupon,
-        { withCredentials: true }
-      );
+      const ax = getAxiosInstance(API_ROUTES.COUPON);
+      const response = await ax.post(`/create-coupon`, coupon);
 
       set({ isLoading: false });
       return response.data.coupon;
@@ -58,9 +66,8 @@ export const useCouponStore = create<CouponStore>((set, get) => ({
   deleteCoupon: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${API_ROUTES.COUPON}/${id}`, {
-        withCredentials: true,
-      });
+      const ax = getAxiosInstance(API_ROUTES.COUPON);
+      const response = await ax.delete(`/${id}`);
       set({ isLoading: false });
       return response.data.success;
     } catch (error) {

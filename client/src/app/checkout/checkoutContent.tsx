@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { GameAPI } from "@/helpers/apis/game";
 import { toast } from "@/hooks/use-toast";
+import { getAxiosInstance } from "@/lib/axios";
 import { useAddressStore } from "@/store/useAddressStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { CartItem, useCartStore } from "@/store/useCartStore";
 import { Coupon, useCouponStore } from "@/store/useCouponStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import { useProductStore } from "@/store/useProductStore";
+import { API_ROUTES } from "@/utils/api";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -30,6 +33,8 @@ function CheckoutContent() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponAppliedError, setCouponAppliedError] = useState("");
+  const [rank, setRank] = useState<number>(-1);
+  const [suggests, setSuggests] = useState<string[]>([]);
   const { items, fetchCart, clearCart } = useCartStore();
   const { getProductById } = useProductStore();
   const { fetchCoupons, couponList } = useCouponStore();
@@ -42,10 +47,50 @@ function CheckoutContent() {
   const { user } = useAuthStore();
   const router = useRouter();
 
+  const gAx = getAxiosInstance(API_ROUTES.GAME);
+  const gAPI = new GameAPI(gAx);
+
+  const suggestCouponForRank = (rank: number) => {
+    if (rank <= 0) return null;
+    else if (rank <= 5) return "top5hacker";
+    else if (rank <= 10) return "top10hacker";
+
+    return null;
+  };
+
   useEffect(() => {
     fetchCoupons();
     fetchAddresses();
     fetchCart();
+
+    async function fetchAdditionalData() {
+      const sRes = await gAPI.fetchSeasonCode();
+      console.info("sRes: ", sRes);
+      if (sRes && "season" in sRes) {
+        const seasonCode = sRes.season;
+        const res = await gAPI.getUserRank(seasonCode);
+        console.info("ress: ", res);
+        if (res && "rank" in res) {
+          setRank(res.rank);
+          await checkIfAvailablePrizeCoupon(res.rank);
+        }
+      }
+
+      async function checkIfAvailablePrizeCoupon(rank: number) {
+        const code = suggestCouponForRank(rank) as string;
+        const vc = await gAx.post(
+          API_ROUTES.COUPON + "/validate-coupon?code=" + code
+        );
+        if (vc.status === 200) {
+          setSuggests((prev) => {
+            if (prev.includes(code)) return prev;
+            else return [...prev, code];
+          });
+        }
+      }
+    }
+
+    fetchAdditionalData().catch(console.error);
   }, [fetchAddresses, fetchCart, fetchCoupons]);
 
   useEffect(() => {
@@ -72,7 +117,10 @@ function CheckoutContent() {
   }, [items, getProductById]);
 
   function handleApplyCoupon() {
-    const getCurrentCoupon = couponList.find((c) => c.code === couponCode);
+    const getCurrentCoupon = couponList.find(
+      (c) => c.code.toLowerCase() === couponCode.toLowerCase()
+    );
+    console.info("couponList: ", couponList);
 
     if (!getCurrentCoupon) {
       setCouponAppliedError("Invalied Coupon code");
@@ -83,8 +131,12 @@ function CheckoutContent() {
     const now = new Date();
 
     if (
-      now < new Date(getCurrentCoupon.startDate) ||
-      now > new Date(getCurrentCoupon.endDate)
+      getCurrentCoupon &&
+      !["top5hacker", "top10hacker"].includes(
+        getCurrentCoupon.code.toLowerCase()
+      ) &&
+      (now < new Date(getCurrentCoupon.startDate) ||
+        now > new Date(getCurrentCoupon.endDate))
     ) {
       setCouponAppliedError(
         "Coupon is not valid in this time or expired coupon"
@@ -93,7 +145,13 @@ function CheckoutContent() {
       return;
     }
 
-    if (getCurrentCoupon.usageCount >= getCurrentCoupon.usageLimit) {
+    if (
+      getCurrentCoupon &&
+      !["top5hacker", "top10hacker"].includes(
+        getCurrentCoupon.code.toLowerCase()
+      ) &&
+      getCurrentCoupon.usageCount >= getCurrentCoupon.usageLimit
+    ) {
       setCouponAppliedError(
         "Coupon has reached its usage limit! Please try a diff coupon"
       );
@@ -101,7 +159,7 @@ function CheckoutContent() {
       return;
     }
 
-    setAppliedCoupon(getCurrentCoupon);
+    setAppliedCoupon(getCurrentCoupon!);
     setCouponAppliedError("");
   }
 
@@ -298,6 +356,23 @@ function CheckoutContent() {
           <div className="lg:col-span-1">
             <Card className="p-6 sticky top-8">
               <h2>Order summary</h2>
+              {suggests.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold">Suggested Coupons</h3>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {suggests.map((c) => (
+                      <span
+                        key={c}
+                        className="bg-foreground text-background/80 font-semibold cursor-pointer rounded-md p-1.5 px-2.5 text-sm"
+                        onClick={() => setCouponCode(c.toUpperCase())}
+                      >
+                        {c.toUpperCase()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {cartItemsWithDetails.map((item) => (
                   <div key={item.id} className="flex items-center space-x-4">
@@ -340,9 +415,24 @@ function CheckoutContent() {
                     <p className="text-sm text-red-600">{couponAppliedError}</p>
                   )}
                   {appliedCoupon && (
-                    <p className="text-sm text-green-600">
-                      Coupon Applied Successfully!
-                    </p>
+                    <>
+                      <p className="text-sm text-green-600">
+                        Coupon Applied Successfully!
+                      </p>
+
+                      <p className="italic bg-red-50 py-2.5 px-4 rounded-md">
+                        {["top5hacker", "top10hackers"].includes(
+                          appliedCoupon.code.toLowerCase()
+                        ) && (
+                          <span className="text-xs text-red-400">
+                            <b>Note:</b> You can only use this coupon once in a
+                            season. If you already used it for this current
+                            season then this discount will be declined
+                            automatically!
+                          </span>
+                        )}
+                      </p>
+                    </>
                   )}
                 </div>
                 <Separator />

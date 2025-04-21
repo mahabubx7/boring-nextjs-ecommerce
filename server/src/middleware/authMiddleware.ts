@@ -14,7 +14,7 @@ export const authenticateJwt = (
   res: Response,
   next: NextFunction
 ) => {
-  let accessToken = req.cookies.accessToken;
+  let accessToken = req.cookies.accessToken || req.cookies.auth_token;
   if (!accessToken) {
     accessToken = req.headers["authorization"]?.split(" ")[1];
     if (!accessToken) {

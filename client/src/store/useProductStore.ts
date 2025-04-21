@@ -1,3 +1,6 @@
+'use client';
+
+import { getAxiosInstance } from "@/lib/axios";
 import { API_ROUTES } from "@/utils/api";
 import axios from "axios";
 import { create } from "zustand";
@@ -45,6 +48,7 @@ interface ProductState {
   setCurrentPage: (page: number) => void;
 }
 
+
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   isLoading: true,
@@ -55,8 +59,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
   fetchAllProductsForAdmin: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(
-        `${API_ROUTES.PRODUCTS}/fetch-admin-products`,
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.get(
+        `/fetch-admin-products`,
         {
           withCredentials: true,
         }
@@ -70,11 +75,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
   createProduct: async (productData: FormData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(
-        `${API_ROUTES.PRODUCTS}/create-new-product`,
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.post(
+        `/create-new-product`,
         productData,
         {
-          withCredentials: true,
+          // withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -89,11 +95,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
   updateProduct: async (id: string, productData: FormData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.put(
-        `${API_ROUTES.PRODUCTS}/${id}`,
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.put(
+        `/${id}`,
         productData,
         {
-          withCredentials: true,
+          // withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },
@@ -108,9 +115,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
   deleteProduct: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.delete(`${API_ROUTES.PRODUCTS}/${id}`, {
-        withCredentials: true,
-      });
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.delete(`/${id}`);
       set({ isLoading: false });
       return response.data.success;
     } catch (e) {
@@ -120,9 +126,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
   getProductById: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${API_ROUTES.PRODUCTS}/${id}`, {
-        withCredentials: true,
-      });
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.get(`/${id}`);
       set({ isLoading: false });
       return response.data;
     } catch (e) {
@@ -141,11 +146,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
         brands: params.brands?.join(","),
       };
 
-      const response = await axios.get(
-        `${API_ROUTES.PRODUCTS}/fetch-client-products`,
+      const ax = getAxiosInstance(API_ROUTES.PRODUCTS);
+      const response = await ax.get(
+        `/fetch-client-products`,
         {
-          params: queryParams,
-          withCredentials: true,
+          params: queryParams        
         }
       );
 
