@@ -46,13 +46,13 @@ function UserAccountPage() {
   const [editingAddress, setEditingAddress] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialAddressFormState);
   const { toast } = useToast();
-  const { userOrders, getOrdersByUserId, isLoading } = useOrderStore();
+  const { userOrders, isLoading } = useOrderStore();
   const { user } = useAuthStore();
 
   useEffect(() => {
     fetchAddresses();
-    getOrdersByUserId();
-  }, [fetchAddresses, getOrdersByUserId]);
+    // getOrdersByUserId();
+  }, [fetchAddresses]);
 
   console.log(userOrders, "userOrders");
 

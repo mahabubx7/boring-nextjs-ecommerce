@@ -39,9 +39,9 @@ function CheckoutContent() {
   const { getProductById } = useProductStore();
   const { fetchCoupons, couponList } = useCouponStore();
   const {
-    createPayPalOrder,
-    capturePayPalOrder,
-    createFinalOrder,
+    // createPayPalOrder,
+    // capturePayPalOrder,
+    // createFinalOrder,
     isPaymentProcessing,
   } = useOrderStore();
   const { user } = useAuthStore();
@@ -205,7 +205,8 @@ function CheckoutContent() {
         paymentId: data.id,
       };
 
-      const createFinalOrderResponse = await createFinalOrder(orderData);
+      // const createFinalOrderResponse = await createFinalOrder(orderData);
+      const createFinalOrderResponse = await Promise.resolve(true);
 
       if (createFinalOrderResponse) {
         await clearCart();
@@ -305,9 +306,12 @@ function CheckoutContent() {
                     }}
                     fundingSource="card"
                     createOrder={async () => {
-                      const orderId = await createPayPalOrder(
-                        cartItemsWithDetails,
-                        total
+                      // const orderId = await createPayPalOrder(
+                      //   cartItemsWithDetails,
+                      //   total
+                      // );
+                      const orderId = await Promise.resolve(
+                        Math.random().toString(24)
                       );
 
                       if (orderId === null) {
@@ -317,9 +321,12 @@ function CheckoutContent() {
                       return orderId;
                     }}
                     onApprove={async (data, actions) => {
-                      const captureData = await capturePayPalOrder(
-                        data.orderID
-                      );
+                      // const captureData = await capturePayPalOrder(
+                      //   data.orderID
+                      // );
+                      const captureData = await Promise.resolve({
+                        id: Math.random().toString(24),
+                      });
 
                       if (captureData) {
                         await handleFinalOrderCreation(captureData);

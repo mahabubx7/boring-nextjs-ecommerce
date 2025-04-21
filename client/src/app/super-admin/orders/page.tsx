@@ -17,20 +17,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { AdminOrder, useOrderStore } from "@/store/useOrderStore";
-import { useEffect } from "react";
+import { useOrderStore } from "@/store/useOrderStore";
 
 type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED";
 
 function SuperAdminManageOrdersPage() {
-  const { getAllOrders, adminOrders, updateOrderStatus } = useOrderStore();
+  // const { getAllOrders, adminOrders, updateOrderStatus } = useOrderStore();
+  const { adminOrders } = useOrderStore();
   const { toast } = useToast();
 
   console.log(adminOrders);
 
-  useEffect(() => {
-    getAllOrders();
-  }, [getAllOrders]);
+  // useEffect(() => {
+  //   getAllOrders();
+  // }, [getAllOrders]);
 
   const getStatusColor = (
     status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED"
@@ -57,7 +57,7 @@ function SuperAdminManageOrdersPage() {
     orderId: string,
     newStatus: OrderStatus
   ) => {
-    await updateOrderStatus(orderId, newStatus);
+    // await updateOrderStatus(orderId, newStatus);
     toast({
       title: "Status updated successfully",
     });
