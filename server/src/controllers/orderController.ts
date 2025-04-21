@@ -199,7 +199,7 @@ export const createFinalOrder = async (
           addressId,
           couponId: couponId,
           total,
-          paymentMethod: "CREDIT_CARD",
+          paymentMethod: "ONLINE",
           paymentStatus: "COMPLETED",
           paymentTrxId: paymentId,
           items: {
